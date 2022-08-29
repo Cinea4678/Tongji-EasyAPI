@@ -1,0 +1,79 @@
+'\n\n\n\n\n\n\n\n\n\n
+<!DOCTYPE>\n<html>\n
+
+<head>\n
+    <meta http-equiv="content-language">\n
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">\n
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">\n
+    <meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0,user-scalable=yes">\n\n
+    <link rel="stylesheet" type="text/css" href="/nidp/css/verify.css">\n
+    <script src="/nidp/javascript/jquery-1.8.2.min.js"></script>\n
+    <script src="/nidp/javascript/jquery.min.js"></script>\n
+    <script src="/nidp/javascript/jquery.idcode.js"></script>\n
+    <script type="text/javascript" src="/nidp/javascript/crypto-js.js"></script>\n
+    <script type="text/javascript" src="/nidp/javascript/ase.js"></script>\n
+    <script type="text/javascript" src="/nidp/javascript/verify.js"></script>\n\t
+    <script src="/nidp/javascript/sm2.js"></script>\n\n\n
+    <script
+        language="JavaScript">\n        var i = 0; \n\n        function onLoadFocus() \n        { \n            if (document.IDPLogin.Ecom_User_ID.value) \n                document.IDPLogin.Ecom_Password.focus(); \n            else \n                document.IDPLogin.Ecom_User_ID.focus(); \n } \n\n        $(function () {
+            \n            if (screen.width > 1600)/* 480 */\n                $(\'.placeholderclass\').removeAttr(\'placeholder\');\n            onLoadFocus();\n        });\n        function subgo(num){\n            if(num == 1){\n                window.location.href=\'https://tongjiaccount.tongji.edu.cn:8443/tongji/activate.do\';\n            }else if(num == 2){\n                window.location.href=\'https://tongjiaccount.tongji.edu.cn:8443/tongji/forgetPasswd.do\';\n            }else{\n                window.location.href=\'https://tongjiaccount.tongji.edu.cn:8443/tongji/activate.do\';\n            }\n        }\n\n    </script>
+    \n
+    <script src="/nidp/javascript/login_jsp.js"></script>\n\n <title>Tongji University Login</title>\n
+    <link href="/nidp/css/login.css" rel="stylesheet">\n
+    <link href="/nidp/css/jquery.idcode.css" rel="stylesheet">\n\n <style type="text/css">
+        \n #Txtidcode {
+            \n width: 180px;
+            \n display: inline-block;
+            \n float: left;
+        }
+
+        \n .Txtidcodeimg {
+            display: inline-block;
+            \n width: 86px;
+            \n
+            /* background: #c0c0c0; */
+            \n height: 43px;
+            \n margin-left: 2px;
+        }
+
+        \n
+    </style>\n
+</head>\n
+
+<body onkeydown="keyOnClick(event);">\n
+    <script src="/nidp/javascript/respond.js"></script>\n\n<div class="main" role="main">\n <div class="main_wrap">\n\n
+            <div class="wrap">\n\n <h1><strong>统一身份认证</strong></h1>\n\n\n <form name="IDPLogin"
+                    enctype="application/x-www-form-urlencoded" id="form1" method="POST"
+                    action="https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0" AUTOCOMPLETE="off">\n <input
+                        type="hidden" name="option" value="credential">\n <input type="hidden" name="Ecom_Captche"
+                        id="validatecode" value="" />\n <p id="error" class="error"
+                        style="color:white;font-weight:bold;"></p>\n\n\n\n \n \n <input type="hidden"
+                        value="登录失败，请重试。">\n \n
+                    <script>\n                    document.getElementById("error").innerHTML = "密码错误，请重新登入！" ; \n                </script>
+                    \n \n \n\t\t\t\t<input type="hidden"
+                        value="0420658c07c5a52c920ad18a9c8fcdcc4fce70331ed2b6e53b090d5e11b9eb3dc31d1336f4391d179fb62f24177943168eecf43a0e9970fbd4a5345de429c9c1b9"
+                        id="secretId">\n <p class="username">\n <input type="text" id="username" name="Ecom_User_ID"
+                            tabindex="1" placeholder="用户名">\n </p>\n <p class="password">\n <input type="password"
+                            id="password" name="Ecom_Password" tabindex="2" placeholder="口令">\n \n </p>\n\n
+                    <!-- <p class="form_submit">\n                    <div><input type="text" id="Txtidcode" name="Txtidcode" placeholder="验证码" tabindex="3" class="txtVerification"/><span id="idcode"></span></div>\n                </p> -->\n
+                    \n\n <p class="form_submit">\n <input type="button" name="btsubmit" id="reg" value="Login"
+                            tabindex="4" onclick="javascript:loginSubmit();">\n </p>\n <p
+                        style="padding:11px 10px 12px; "></p>\n\n\n <p class="form_submit">\n
+                        <!--\t<div><a style="text-decoration:none;" href=\'javascript:void(0)\' onclick=\'subgo(1)\'><font color="white">信息补全</font></a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a style="text-decoration:none;" href=\'javascript:void(0)\' onclick=\'subgo(2)\'><font color="white">找回密码</font></a></div>  -->\n
+                    <div><a href="https://tongjiaccount.tongji.edu.cn:8443/tongji/help/default.htm">
+                            <font color="white">使用帮助</font>
+                        </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a
+                            style="text-decoration:none;" href=\'javascript:void(0)\' onclick=\'subgo(3)\'>
+                            <font color="white">激活</font>
+                        </a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a
+                            style="text-decoration:none;" href=\'javascript:void(0)\' onclick=\'subgo(2)\'>
+                            <font color="white">找回密码</font>
+                        </a></div>\n </p>\n\n <div class="help">
+                        <p>如有问题请拨打电话021-65989006咨询</p>
+                    </div>\n\n
+                </form>\n <div id="mpanel5" style="width: 400px;height: 300px;"></div>\n </div>\n\n </div>\n</div>\n\n
+</body>\n
+<script>\n\n    $(document).ready(function () { \n       /* $.ajax({\n            type:"get",\n            url:"https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0&flag=true",\n            success:function(result){\n                $("#codeImg").attr("src",result);\n            }\n        });*/\nif((navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i))) { \n                // alert("手机访问");\n                var dform = document.getElementById("form1");\n                var dinput = document.createElement(\'input\');\n                dinput.type = "hidden";\n                dinput.name = "EnableCookieAuth";\n                dinput.value = "true";\n        \n                dform.appendChild(dinput);\n            }\n    });\n\n    $(\'#mpanel5\').pointsVerify({\n        baseUrl: \'https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0\',  //服务器请求地址, 默认地址为安吉服务器;\n        containerId: \'reg\', // pop模式 必填 被点击之后出现行为验证码的元素id\n        mode: \'pop\',\n        imgSize: {       //图片的大小对象\n            width: \'400px\',\n            height: \'200px\',\n        },\n        ready: function () {\n        },\n        success: function (params) {\n            //alert(params);\n            // alert(params.captchaVerification.replace(\' \', \'+\'));\n            $("#validatecode").val(params.captchaVerification.replace(\' \',\'+\'));\n            loginSubmit();\n        },\n        error: function () {\n        }\n\n    });\n\n    function keyOnClick(e){\n        var theEvent = window.event || e;\n        var code = theEvent.keyCode || theEvent.which;\n        if (code==13) {  //回车键的键值为13\n            // loginSubmit();  //调用搜索事件\n            $("#reg").click();\n        }\n    }\n\n\n\n    function tub(){\n        if(document.IDPLogin.Ecom_User_ID.value != null && document.IDPLogin.Ecom_User_ID.value.length > 0){\n            $.ajax({\n                type:"post",\n                data: "userId="+document.IDPLogin.Ecom_User_ID.value,\n                url:"https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0&flag=temp",\n                success:function(result){\n                    console.log(result)\n                    if(result != null && result != ""){\n                        if(result=="false"){\n                            document.IDPLogin.Ecom_User_ID.focus();\n                            if(confirm("账号状态需要激活，请先执行激活操作！")){\n                                window.location.href=\'https://tongjiaccount.tongji.edu.cn:8443/tongji/activate.do\';\n                            }\n                        }\n                    }\n                }\n            });\n        }\n    }\n\n    function loginSubmit(){\n        var signin_id = $("#username").val();\n        var signin_pwd = $("#password").val();\n        var captche = $("#validatecode").val();\n\t\tvar publicKey = document.getElementById("secretId").value;\n        if (signin_id == ""){\n            return false;\n        }\n        if (signin_pwd == ""){\n            return false;\n        }\n        if (captche == ""){\n            return false;\n        }\n\t\tvar encryptData = sm2Encrypt(signin_pwd, publicKey, 0);\n\n\t\tdocument.getElementById("password").value=encryptData;\n        $("#form1").submit();\n    }\n\n    /*function changeImg(){\n        $.ajax({\n            type:"get",\n            url:"https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0&flag=true",\n            success:function(result){\n                $("#codeImg").attr("src",result);\n            }\n        });\n    }*/\n\n    /*function changeCode(e){\n        var source = e.src\n        var index = source.indexOf( "?" ) ;  // 从 source 中寻找 ? 第一次出现的位置 (如果不存在则返回 -1 )\n        //console.log( "index : " + index  ) ;\n\n        if( index > -1 ) { // 如果找到了 ?  就进入内部\n            var s = source.substring( 0 , index ) ; // 从 source 中截取 index 之前的内容 ( index 以及 index 之后的内容都被舍弃 )\n            //console.log( "s : " + s  ) ;\n\n            var date = new Date(); // 创建一个 Date 对象的 一个 实例\n            var time = date.getTime() ; // 从 新创建的 Date 对象的实例中获得该时间对应毫秒值\n            e.src = s + "?time=" + time ; // 将 加了 尾巴 的 地址 重新放入到 src 上\n\n            //console.log( e.src ) ;\n        } else {\n            var date = new Date();\n            e.src = source + "?time=" + date.getTime();\n        }\n    }*/\n</script>
+\n
+
+</html>\n'

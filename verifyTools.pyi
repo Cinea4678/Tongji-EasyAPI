@@ -5,11 +5,10 @@
   www.cinea.com.cn
 """
 
-def genUUID() -> str:
-    pass
+def genUUID() -> str: ...
 
-def updateSM2PublicKey() -> str:
-    pass
+def updateSM2PublicKey() -> str: ...
 
-def getSM2js()->str:
-    pass
+def getSM2js()->str: ...
+
+def captchaBreaker()->str:...
