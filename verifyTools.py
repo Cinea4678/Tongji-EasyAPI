@@ -30,15 +30,15 @@ def genUUID():
     s[8]=s[13]=s[18]=s[23]="-"
     return "".join(s)
 
-def updateSM2PublicKey():
+def updateSM2PublicKey(session:requests.Session):
     """
-    本函数用于从ids.tongji.edu.cn获取最新的SM2公钥。如果你需要手动写通过验证码的过程，那么你可能会需要它。
+    本函数用于从ids.tongji.edu.cn获取最新的SM2公钥及其对应的cookie。如果你需要手动写通过验证码的过程，那么你可能会需要它。
     @param: 无需任何参数
-    @return: SM2公钥
+    @return: 字典。secretId为公钥，cookie为对应的cookie（request.RequestCookieJar格式）。请注意，每个公钥都对应唯一的JSESSIONID。
     """
     try:
-        html = requests.get("https://ids.tongji.edu.cn:8443/nidp/app/login?id=Login&sid=0&option=credential&sid=0&target=https%3A%2F%2F1.tongji.edu.cn",headers=networkTools.idsheaders()).text
-        soup = BeautifulSoup(html,"lxml")
+        res = session.get("https://ids.tongji.edu.cn:8443/nidp/app/login?id=Login&sid=0&option=credential&sid=0&target=https%3A%2F%2Fids.tongji.edu.cn%3A8443%2Fnidp%2Foauth%2Fnam%2Fauthz%3Fscope%3Dprofile%26response_type%3Dcode%26redirect_uri%3Dhttps%3A%2F%2F1.tongji.edu.cn%2Fapi%2Fssoservice%2Fsystem%2FloginIn%26client_id%3D5fcfb123-b94d-4f76-89b8-475f33efa194",headers=networkTools.idsheaders())
+        soup = BeautifulSoup(res.text,"lxml")
         secretId = soup.find(id="secretId")["value"]
     except Exception as e:
         raise e
@@ -73,20 +73,22 @@ def aesEncrypt(data:str,key:str)->str:
     result = result.decode("utf-8")
     return result
 
-def captchaBreaker()->str:
+def captchaBreaker(session:requests.Session)->str:
     """
     开发者说明：
+
     限于个人水平，目前使用了某云平台的打码服务（惭愧）
+
     计划是既准备本地浏览器用户点选，又使用云平台，在云平台欠费时使用本地点选
+
     未来仍需要本地打码：有偿(300-500r)招募计算机视觉、人工智能领域专家参与编写本地打码
     """
 
-    newHeader = networkTools.idsheaders()
-    newHeader["content-type"]="application/json;charset=UTF-8"
+    session.headers["content-type"]="application/json;charset=UTF-8"
 
     #阶段一：获取图片验证码
     def getcaptchaOnce(uuid:str):
-        res = requests.post(BaseUrl+"/getCaptcha=1", json= {"captchaType":"clickWord", "clientUid": uuid, "ts": networkTools.ts()},headers=newHeader).text
+        res = session.post(BaseUrl+"/getCaptcha=1", json= {"captchaType":"clickWord", "clientUid": uuid, "ts": networkTools.ts()}).text
         try:
             res = json.loads(res)
         except:
@@ -102,13 +104,13 @@ def captchaBreaker()->str:
 
     #阶段三：验证图片验证码
     def verifycaptcha(pointData:list[int],captchaMeta:dict,uuid:str) -> bool:
-        res = requests.post(BaseUrl+"/checkCaptcha=1",json={
+        res = session.post(BaseUrl+"/checkCaptcha=1",json={
                 "captchaType": "clickWord",
                 "clientUid": uuid,
                 "pointJson": aesEncrypt(json.dumps(pointData).replace(' ',''),captchaMeta["secretKey"]) if captchaMeta["secretKey"] else json.dumps(pointData),
                 "token": captchaMeta["token"],
                 "ts":networkTools.ts()
-            },headers=newHeader)
+            })
         try:
             vRes = json.loads(res.text)
         except:
@@ -148,6 +150,6 @@ def captchaBreaker()->str:
         raise SystemError("很抱歉，验证码识别失败！在失败前已重试30次。")
     
     #阶段四：制作验证码密钥
-    captchaVerification = aesEncrypt(captchaMeta["token"]+'---'+json.dumps(pointList),captchaMeta["secretKey"]) if captchaMeta["secretKey"] else captchaMeta["token"]+'---'+json.dumps(pointList)
+    captchaVerification = aesEncrypt(captchaMeta["token"]+'---'+json.dumps(pointList).replace(' ',''),captchaMeta["secretKey"]) if captchaMeta["secretKey"] else captchaMeta["token"]+'---'+json.dumps(pointList).replace(' ','')
     
     return captchaVerification

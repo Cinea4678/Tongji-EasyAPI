@@ -6,10 +6,12 @@
 """
 
 from email import header
+import json
+import session
 import verifyTools,networkTools
 import re,asyncio,time,os
 import requests
-from urllib.parse import urlencode
+import urllib.parse as urlparse
 import execjs
 
 #ids.tongji.edu.cn的SM2算法公钥
@@ -30,20 +32,22 @@ class TJU_Session:
         @param proxy: 若需使用HTTP代理，请在此填入代理地址。
         @return: 默认返回真，若现在登录至一系统，则为登录的成功与否。
         """
-        self.iflogin = False
-        self.cookies = ""
-        self.studentID = None
-        self.studentPassword = None
+        self._iflogin = False
+        self._studentID = None
+        self._studentPassword = None
+        self._token = None
+        self._uid = None
+        self._sessionID = None
+        self._session = requests.session()
+
         if proxy:
             if not re.match("^(https?|socks5?)://([^:]*(:[^@]*)?@)?([^:]+|\[[:0-9a-fA-F]+\])(:\d+)?/?$|^$",proxy):
                 raise ValueError("代理地址格式错误，必须匹配^(https?|socks5?)://([^:]*(:[^@]*)?@)?([^:]+|\[[:0-9a-fA-F]+\])(:\d+)?/?$|^$")
         self.proxy = proxy
 
-        #初始化：获取公钥和SM2.js
+        #初始化：获取SM2.js
         def initMetaFiles():
-            global IDSSM2PublicKey,sm2jsFile
-            if IDSSM2PublicKey == "":
-                IDSSM2PublicKey=verifyTools.updateSM2PublicKey()
+            global sm2jsFile
             if sm2jsFile=="":
                 sm2jsFile=verifyTools.getSM2js()
         initMetaFiles()
@@ -58,20 +62,25 @@ class TJU_Session:
         @params url: 你可以自定义测试连接时所前往连接的Url（请求方式为get，敬请注意）
         @return: 连接成功与否
         """
-        if not self.iflogin:
+        if not self._iflogin:
             return False  #此处为假会导致绝大多数功能异常，不能允许用户测试
-        if not self.studentID:
+        if not self._studentID:
             return False
         if not url:
-            url = f"https://1.tongji.edu.cn/api/studentservice/studentDetailInfo/getStatusInfoByStudentId?studentId={self.studentID}&_t={networkTools.ts()}"
+            url = f"https://1.tongji.edu.cn/api/studentservice/studentDetailInfo/getStatusInfoByStudentId?studentId={self._studentID}&_t={networkTools.ts()}"
         
         #开始测试连接
         try:
-            response = requests.get(url,headers=networkTools.headers(),cookies=self.cookies)
-            if response.status_code==200:
-                return True
-            else:
+            response = self._session.get(url)
+            if response.status_code!=200:
                 return False
+            res = json.loads(response.text)
+            if "code" not in res or res["code"]!=200:
+                return False
+            else:
+                return True
+        except json.JSONDecodeError:
+            return False
         except Exception as e:
             raise e
     
@@ -101,54 +110,87 @@ class TJU_Session:
             raise ValueError("学号格式错误，必须匹配^[1|2|3|4][0-9]{6}$。")
         if not re.match("^[0-9]{6}$",studentPassword):
             raise ValueError("密码格式错误，必须匹配^[0-9]{6}$。")
-        
+
+        #初始化Session
+        self._session.headers = networkTools.idsheaders()
+
         #加密密码
         #【开发者注释】此处未能逆向或找到替代模块代替SM2Encrypt，长期有偿(50-100r)招募专家逆向SM2
+        IDSSM2PublicKey = verifyTools.updateSM2PublicKey(self._session)
         old_execjsrt = ""
         if "EXECJS_RUNTIME" in os.environ:
             old_execjsrt = os.environ["EXECJS_RUNTIME"]
         os.environ["EXECJS_RUNTIME"] = "PhantomJS"
         javaScript = execjs.compile(sm2jsFile)
-        encryptData = javaScript.call('sm2Encrypt',studentPassword,IDSSM2PublicKey)
-
-        print(encryptData)
+        encryptData = javaScript.call('sm2Encrypt',studentPassword,IDSSM2PublicKey,0)
         os.environ["EXECJS_RUNTIME"] = old_execjsrt
         
         #完成验证码验证
-        captchaVerification = verifyTools.captchaBreaker()
+        captchaVerification = verifyTools.captchaBreaker(self._session)
 
         #提交验证，开始登录
+        #第一跳：向ids取得访问权限
         dataToSend = {
             "option":"credential",
             "Ecom_Captche":captchaVerification,
             "Ecom_User_ID":studentID,
             "Ecom_Password":encryptData
         }
-        dataToSend = urlencode(dataToSend)
-        newHeader = networkTools.idsheaders()
-        newHeader["content-type"]="application/x-www-form-urlencoded"
-        loginResp1 = requests.post("https://ids.tongji.edu.cn:8443/nidp/app/login?id=Login&sid=0&option=credential&sid=0",data=dataToSend,headers=newHeader)
-        cookie1 = loginResp1.cookies
-        urls = re.findall(r"^window\.location\.href=\'.*\'$",loginResp1.text)
+        dataToSend = urlparse.urlencode(dataToSend)
+        self._session.headers["content-type"]="application/x-www-form-urlencoded"
+        loginResp1 = self._session.post("https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0",data=dataToSend)
+        urls = re.findall(r"window\.location\.href=\'(.*?)\'",loginResp1.text)
         if len(urls)>0:
             href = urls[0]
         else:
-            raise SystemError("登录失败，请检查学号，密码是否正确！")
-        loginResp2 = requests.get(href,headers=networkTools.idsheaders(),cookies=cookie1)
-        print(loginResp2.cookies.get_dict())
-        print(loginResp2.status_code)
+            raise ValueError("登录失败，请检查学号，密码是否正确！")
 
-#tjus = TJU_Session("2152955","831033")
+        #第二三四跳：由ids前往1系统
+        loginResp2 = self._session.get(href,headers=networkTools.idsheaders())
 
-sm2jsFile = verifyTools.getSM2js()
-IDSSM2PublicKey = "04fa689d8f36b175f519e167a97b5c3d06965f2ca1a28f9e45ce63af29ddb6913814ce76d1edb44f83034e63f0e0a4e365f443f0eaa0d4278e367744461de0d467"
-old_execjsrt = ""
-if "EXECJS_RUNTIME" in os.environ:
-    old_execjsrt = os.environ["EXECJS_RUNTIME"]
-os.environ["EXECJS_RUNTIME"] = "PhantomJS"
-javaScript = execjs.compile(sm2jsFile)
-encryptData = javaScript.call('sm2Encrypt',"831033",IDSSM2PublicKey,0)
-print(encryptData)
+        #第五跳：向1系统取得cookies
+        self._session.headers = networkTools.headers()
+        self._session.headers["x-token"] = ""
+        tokenForm= urlparse.parse_qs(urlparse.urlparse(loginResp2.url).query)
+        self._token = tokenForm["token"][0]
+        self._uid = tokenForm["uid"][0]
+        FuckTheFakeTS = tokenForm["ts"][0]
+        loginResp3 = self._session.post(f"https://1.tongji.edu.cn/api/sessionservice/session/login",data=json.dumps({
+            "uid":self._uid,
+            "token":self._token,
+            "ts":FuckTheFakeTS
+        }).replace(' ',''))
+
+        try:
+            loginResult = json.loads(loginResp3.text)
+            if "code" not in loginResult or loginResult["code"]!=200:
+                raise SystemError(f"登录失败，1系统返回了不正常的凭据。这通常是由于访问人数过多造成的。频繁出现此错误，则请联系开发者。（notes: json loads succeed but not code 200. The text is '{loginResp3.text}'）")
+            loginResult = loginResult["data"]
+            self._sessionID = loginResult["sessionid"]
+            self._aesIv = loginResult["aesIv"]
+            self._aesKey = loginResult["aesKey"]
+            self._studentData = loginResult["user"]
+        except:
+            raise SystemError(f"登录失败，1系统返回了不正常的凭据。这通常是由于访问人数过多造成的。频繁出现此错误，则请联系开发者。（notes: json loads failed while text is '{loginResp3.text}'）")
+        
+        #测试连接
+        self._iflogin = True
+        self._studentID = studentID
+        self._studentPassword = studentPassword
+        if self.testConnection():
+            return self._session.cookies.get_dict()
+        else:
+            self._iflogin = False
+            raise SystemError("登录失败，1系统未正常运行")
+    
+    @property
+    def sessionID(self) -> str:
+        return self._sessionID
+
+
+
+tjus = TJU_Session("2152955","831033")
+print(tjus.sessionID)
 
         
 
