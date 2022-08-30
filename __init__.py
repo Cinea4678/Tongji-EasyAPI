@@ -7,6 +7,6 @@
   www.cinea.com.cn
 """
 
-from session import *
-from verifyTools import *
+from EasyTongjiAPI.session import *
+from EasyTongjiAPI.verifyTools import *
 

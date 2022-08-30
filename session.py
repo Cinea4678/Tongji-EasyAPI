@@ -5,10 +5,8 @@
   www.cinea.com.cn
 """
 
-from email import header
 import json
-import session
-import verifyTools,networkTools
+from . import verifyTools,networkTools
 import re,asyncio,time,os
 import requests
 import urllib.parse as urlparse
@@ -187,10 +185,6 @@ class TJU_Session:
     def sessionID(self) -> str:
         return self._sessionID
 
-
-
-tjus = TJU_Session("2152955","831033")
-print(tjus.sessionID)
 
         
 

@@ -7,7 +7,7 @@
 
 import json,base64
 from typing import Any
-import networkTools
+from . import networkTools
 import math,time
 from random import random
 import requests
