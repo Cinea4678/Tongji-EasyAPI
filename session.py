@@ -6,7 +6,10 @@
 """
 
 import json
-from . import verifyTools,networkTools
+try:
+    from . import verifyTools,networkTools
+except:
+    import verifyTools,networkTools
 import re,asyncio,time,os
 import requests
 import urllib.parse as urlparse
@@ -101,7 +104,7 @@ class TJU_Session:
 
         #学号与密码效验
         if isinstance(studentID,int):
-            studentID = int(studentID)
+            studentID = str(studentID)
         if isinstance(studentPassword,int):
             studentPassword = "%06d" % studentPassword  #补齐零
         if not re.match("^[1|2|3|4][0-9]{6}$",studentID):
@@ -115,13 +118,14 @@ class TJU_Session:
         #加密密码
         #【开发者注释】此处未能逆向或找到替代模块代替SM2Encrypt，长期有偿(50-100r)招募专家逆向SM2
         IDSSM2PublicKey = verifyTools.updateSM2PublicKey(self._session)
-        old_execjsrt = ""
-        if "EXECJS_RUNTIME" in os.environ:
-            old_execjsrt = os.environ["EXECJS_RUNTIME"]
-        os.environ["EXECJS_RUNTIME"] = "PhantomJS"
-        javaScript = execjs.compile(sm2jsFile)
-        encryptData = javaScript.call('sm2Encrypt',studentPassword,IDSSM2PublicKey,0)
-        os.environ["EXECJS_RUNTIME"] = old_execjsrt
+        # old_execjsrt = ""
+        # if "EXECJS_RUNTIME" in os.environ:
+        #     old_execjsrt = os.environ["EXECJS_RUNTIME"]
+        # os.environ["EXECJS_RUNTIME"] = "PhantomJS"
+        # javaScript = execjs.compile(sm2jsFile)
+        # encryptData = javaScript.call('sm2Encrypt',studentPassword,IDSSM2PublicKey,0)
+        # os.environ["EXECJS_RUNTIME"] = old_execjsrt
+        encryptData = networkTools.sm2Encrypt(studentPassword,IDSSM2PublicKey)
         
         #完成验证码验证
         captchaVerification = verifyTools.captchaBreaker(self._session)
@@ -180,11 +184,20 @@ class TJU_Session:
         else:
             self._iflogin = False
             raise SystemError("登录失败，1系统未正常运行")
-    
+
+    """
+    以下是参数函数的实现
+    """
     @property
     def sessionID(self) -> str:
         return self._sessionID
 
+    @property
+    def studentID(self) -> str:
+        return self._studentID
+
+# cinea = TJU_Session("2152955","831033")
+# print(cinea.sessionID)    
 
         
 

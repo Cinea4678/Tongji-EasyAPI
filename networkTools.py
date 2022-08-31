@@ -1,5 +1,5 @@
 '''
-  You Should NOT Import This File, Which Is For Internal Use. 
+  Hey,don't import me! I am for internal use. 
   -------------------------------------
   Project Tongji-EasyAPI
   networkTools.py
@@ -9,6 +9,8 @@
 
 import time,math
 from random import random
+import base64
+from gmssl import sm2
 
 def _genUUID():
     """
@@ -54,3 +56,7 @@ def headers()->dict[str:str]:
 def ts()->int:
     '''Time stamp of JavaScript'''
     return int(time.time()*1000)
+
+def sm2Encrypt(data:str,publicKey:str):
+    sm2c = sm2.CryptSM2("00B9AB0B828FF68872F21A837FC303668428DEA11DCD1B24429D0C99E24EED83D5",publicKey)
+    return base64.b64encode(sm2c.encrypt(data.encode("utf-8"))).decode()

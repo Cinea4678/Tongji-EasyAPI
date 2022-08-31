@@ -7,7 +7,10 @@
 
 import json,base64
 from typing import Any
-from . import networkTools
+try:
+    from . import networkTools
+except:
+    import networkTools
 import math,time
 from random import random
 import requests
@@ -64,7 +67,6 @@ def aesEncrypt(data:str,key:str)->str:
     """
     内部函数。调用时，key的有效性自理。
     """
-    BLOCK_SIZE = 16  # 补齐位数
     key = key.encode("utf-8")
     data = Padding.pad(data.encode("utf-8"),16)
     aes = AES.new(key,AES.MODE_ECB)
