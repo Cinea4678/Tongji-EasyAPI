@@ -6,9 +6,9 @@
 """
 
 try:
-    from . import verifyTools,networkTools,crack
+    from . import verifyTools,networkTools,crack,models
 except:
-    import verifyTools,networkTools,crack
+    import verifyTools,networkTools,crack,models
 import re,asyncio,time,os,json
 import requests
 import urllib.parse as urlparse
@@ -31,7 +31,7 @@ class Session():
         @param studentPassword: 若现在登录，则为登录学生的**密码**（推荐密码使用str）。
         @param manual: 是否手动输入验证码。若自动输入不成功，请尝试使用手动输入。
         @param proxy: 若需使用HTTP代理，请在此填入代理地址。
-        @return: 默认返回真，若现在登录至一系统，则为登录的成功与否。
+        @return: 构造函数无返回值
         """
         self._iflogin = False
         self._studentID = None
@@ -40,6 +40,10 @@ class Session():
         self._uid = None
         self._sessionID = None
         self._session = requests.session()
+        self._studentData = models.Student(name="对象创建成功")
+
+        self._loginTime = 0
+        
 
         if proxy:
             if not re.match(r"^(https?|socks5?)://([^:]*(:[^@]*)?@)?([^:]+|\[[:0-9a-fA-F]+\])(:\d+)?/?$|^$",proxy):
@@ -93,7 +97,7 @@ class Session():
         """
         登录至一系统。
         **学号密码登录**：传入学号与密码即可。studentID: 学号; studentPassword: 密码。
-        @params manual:  参数manual用来确认使用自动通过验证码或手动通过验证码。如果您不能成功使用自动模式，请使用手动模式。手动通过验证码一般远快于自动通过验证码。
+        @params manual:  参数manual用来确认使用自动通过验证码或手动通过验证码。如果您不能成功使用自动模式，请使用手动模式。手动模式仍然存在bug。
         **学号cookie登录**：传入cookie与studentID即可。**请注意：学号是不可省略的。**
         @return: 函数会返回cookie，但是会话对象会自动登录，你无需额外操作。
         """
@@ -207,7 +211,8 @@ class Session():
                 self._sessionID = loginResult["sessionid"]
                 self._aesIv = loginResult["aesIv"]
                 self._aesKey = loginResult["aesKey"]
-                self._studentData = loginResult["user"]
+                self._studentDataSourceObj = loginResult["user"]
+                self._studentData = models.Student(studentDataObject=self._studentDataSourceObj)
             except:
                 raise SystemError(f"登录失败，1系统返回了不正常的凭据。这通常是由于访问人数过多造成的。频繁出现此错误，则请联系开发者。（notes: json loads failed while text is '{loginResp3.text}'）")
 
@@ -216,13 +221,20 @@ class Session():
             self._studentID = studentID
             self._studentPassword = studentPassword
             if self.testConnection():
+                self._loginTime = time.time()
                 return self._session.cookies.get_dict()
             else:
                 self._iflogin = False
                 raise SystemError("登录失败，1系统未正常运行")
         
         if not manual:
-            raise SystemError("这不可思议，但还是发生了。请使用手动模式通过验证码。")
+            raise SystemError("自动验证失效，这真是不可思议。请使用手动模式通过验证码。")
+
+    def __str__(self) -> str:
+        return f"<TJU 1-Session, User:{str(self._studentData)}, Last Login Time:{time.asctime( time.localtime(self._loginTime))}, sessionID:{self._sessionID}>"
+
+    def __repr__(self) -> str:
+        return f"<TJU 1-Session, User:{str(self._studentData)}, Last Login Time:{time.asctime( time.localtime(self._loginTime))}, sessionID:{self._sessionID}>"
 
     """
     以下是参数函数的实现
