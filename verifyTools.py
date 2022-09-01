@@ -8,9 +8,9 @@
 import json,base64
 from typing import Any
 try:
-    from . import networkTools
+    from . import networkTools,offlineCaptcha
 except:
-    import networkTools
+    import networkTools,offlineCaptcha
 import math,time
 from random import random
 import requests
@@ -75,15 +75,11 @@ def aesEncrypt(data:str,key:str)->str:
     result = result.decode("utf-8")
     return result
 
-def captchaBreaker(session:requests.Session)->str:
+def captchaBreaker(session:requests.Session,online:bool=False)->str:
     """
     开发者说明：
 
-    限于个人水平，目前使用了某云平台的打码服务（惭愧）
-
-    计划是既准备本地浏览器用户点选，又使用云平台，在云平台欠费时使用本地点选
-
-    未来仍需要本地打码：有偿(300-500r)招募计算机视觉、人工智能领域专家参与编写本地打码
+    限于个人水平，目前无法完成自动打码
     """
 
     session.headers["content-type"]="application/json;charset=UTF-8"
@@ -124,34 +120,52 @@ def captchaBreaker(session:requests.Session)->str:
 
     #阶段二：提交打码平台打码
     #为便于日后维护，将由作者的服务器代理代码请求
-    success = False
-    for _ in range(30):
-        uuid = "point-"+genUUID()
-        captchaMeta = getcaptchaOnce(uuid)
-        try:
-            res = requests.get("https://www.cinea.com.cn/api/sqp/captchaBroke",json={
-                "imageBase64":captchaMeta["image"],
-                "wordList":captchaMeta["wordList"]
-            })
-            if res.status_code!=200:
+    if online:
+        #在线打码
+        success = False
+        for _ in range(30):
+            uuid = "point-"+genUUID()
+            captchaMeta = getcaptchaOnce(uuid)
+            try:
+                res = requests.get("https://www.cinea.com.cn/api/sqp/captchaBroke",json={
+                    "imageBase64":captchaMeta["image"],
+                    "wordList":captchaMeta["wordList"]
+                })
+                if res.status_code!=200:
+                    pass
+                else:
+                    resData = json.loads(res.text)
+                    if resData["success"]:
+                        pointList = []
+                        for word in captchaMeta["wordList"]:
+                            pointList.append({"x":resData["dataList"][word][0],"y":resData["dataList"][word][1]})
+                        if verifycaptcha(pointList,captchaMeta,uuid):
+                            success = True
+                            break
+                        else:
+                            requests.get(f'https://www.cinea.com.cn/api/sqp/reportWrongCaptcha?picId={resData["picId"]}')
+            except:
                 pass
-            else:
-                resData = json.loads(res.text)
-                if resData["success"]:
-                    pointList = []
-                    for word in captchaMeta["wordList"]:
-                        pointList.append({"x":resData["dataList"][word][0],"y":resData["dataList"][word][1]})
-                    if verifycaptcha(pointList,captchaMeta,uuid):
-                        success = True
-                        break
-                    else:
-                        requests.get(f'https://www.cinea.com.cn/api/sqp/reportWrongCaptcha?picId={resData["picId"]}')
-        except:
-            pass
-    if not success:
-        raise SystemError("很抱歉，验证码识别失败！在失败前已重试30次。")
+        if not success:
+            raise SystemError("很抱歉，验证码识别失败！在失败前已重试30次。")
+    else:
+        #本地JavaScript打码（推荐）
+        while True:
+            uuid = "point-"+genUUID()
+            captchaMeta = getcaptchaOnce(uuid)
+            try:
+                offlineResult = offlineCaptcha.captchaOfflineBreaker(captchaMeta["image"],captchaMeta["wordList"])
+                if offlineResult["reason"]==1:
+                    return False,""
+                pointList = offlineResult["result"]
+                if verifycaptcha(pointList,captchaMeta,uuid):
+                    break
+            except:
+                pass
+
+
     
     #阶段四：制作验证码密钥
     captchaVerification = aesEncrypt(captchaMeta["token"]+'---'+json.dumps(pointList).replace(' ',''),captchaMeta["secretKey"]) if captchaMeta["secretKey"] else captchaMeta["token"]+'---'+json.dumps(pointList).replace(' ','')
     
-    return captchaVerification
+    return True,captchaVerification

@@ -8,16 +8,80 @@
     <title>请点击验证码</title>
 </head>
 <body>
-    <div style="width:310px;height: 155px;">
-        <img src="" id="captcha-image">
-        <p id="cpatcha-text">你需要点击：</p>
+    <div>
+        <div style="width:310px;height: 155px;float: left;" id="captcha">
+            <img src="" id="captcha-image">
+        </div>
+        <div style="height: 155px;float: left; margin: 5px;">
+            <p id="captcha-text">请稍等，正在加载验证码</p>
+            <p id="captcha-status"></p>
+            <button hidden id="resetClickBtn">清除点击</button>
+            <p style="font-size:1.2em;color:red">请不要刷新或关闭页面。若需要退出或更换验证码，请点击下方按钮。</p>
+            <p style="font-size:1.2em;color:red">若浏览器弹窗提示，请放心点击"离开"。</p>
+            <div>
+                <button id="abortBtn" float: left;>取消登录</button>
+                <button id="refreshBtn" float: left;>刷新验证码</button>
+            </div>
+            <p>刷新验证码时，浏览器会短暂重启。</p>
+        </div>
     </div>
     <div><p>JavaScript Page By Cinea.</p></div>
 </body>
 <script>
+    window.resizeTo(400,400)
     $(document).ready(function(){
         //载入图像和验证文字
-        
+        $.post("http://127.0.0.1:810/api/getdata",function(data,status){
+            console.log(data)
+            $("#captcha-image").attr("src","data:image/jpeg;base64,"+data.imageBase64);
+            $("#captcha-text").text("请依次点击【"+data.wordsList+"】");
+            $("#captcha-text").css("font-size","1.5em");
+        })
     })
+
+    function closeWindow() {
+        var userAgent = navigator.userAgent;
+        if (userAgent.indexOf("Firefox") != -1 || userAgent.indexOf("Chrome") != -1) {
+            window.location.href = "about:blank";
+            window.close();
+        } else {
+            window.opener = null;
+            window.open("", "_self");
+            window.close();
+        }
+    }
+
+    function heartbeat(){
+        $.post("http://127.0.0.1:810/api/heartbeat")
+    }
+    window.setInterval(heartbeat,800)
+
+    $("#abortBtn").click(async function(){
+        await $.post("http://127.0.0.1:810/api/abort")
+        closeWindow()
+    })
+
+    $("#refreshBtn").click(async function () {
+        await $.post("http://127.0.0.1:810/api/submit?json=[]")
+        closeWindow()
+    })
+
+    var clickNum = 1
+    var pointList = new Array()
+    var textList = new Array()
+
+    $("#captcha").click(async function (event) {
+            var y = event.pageY - $(this).offset().top;
+            var x = event.pageX - $(this).offset().left;
+            pointList.push({"x":x,"y":y})
+            textList.push("第"+ clickNum +"次点击（"+x+","+y+"）")
+            $("#captcha-status").text(textList.join("，"))
+            $("#resetClickBtn").removeAttr("hidden")
+            clickNum++
+            if(clickNum >3){
+                fetch("http://127.0.0.1:810/api/submit?json=" + JSON.stringify({ "result": pointList }),{method:"POST"}).then(res => (closeWindow()))
+            }
+        });
+
 </script>
 </html>

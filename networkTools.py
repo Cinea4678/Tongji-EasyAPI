@@ -33,7 +33,7 @@ _idsheaders = {
     "accept-language":"zh-CN,zh;q=0.9",
     "Authorization": "Basic MjE1Mjk1NTo4MzEwMzM=",
     "origin":"https://ids.tongji.edu.cn:8443",
-    "referer":"https://ids.tongji.edu.cn:8443/nidp/app/login?id=Login&sid=0&option=credential&sid=0&target=https%3A%2F%2Fids.tongji.edu.cn%3A8443%2Fnidp%2Foauth%2Fnam%2Fauthz%3Fscope%3Dprofile%26response_type%3Dcode%26redirect_uri%3Dhttps%3A%2F%2F1.tongji.edu.cn%2Fapi%2Fssoservice%2Fsystem%2FloginIn%26client_id%3D5fcfb123-b94d-4f76-89b8-475f33efa194",
+    "referer":"https://ids.tongji.edu.cn:8443/nidp/app/login?id=Login&sid=0&option=credential&sid=0&target=https%3A%2F%2Fids.tongji.edu.cn%3A8443%2Fnidp%2Foauth%2Fnam%2Fauthz%3Fscope%3Dprofile%26response_type%3Dcode%26redirect_uri%3Dhttps%3A%2F%2F1.tongji.edu.cn%2Fapi%2Fssoservice%2Fsystem%2FloginIn%26client_id%3D"+_genUUID(),
     "user-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
 }
 
@@ -58,5 +58,10 @@ def ts()->int:
     return int(time.time()*1000)
 
 def sm2Encrypt(data:str,publicKey:str):
-    sm2c = sm2.CryptSM2("00B9AB0B828FF68872F21A837FC303668428DEA11DCD1B24429D0C99E24EED83D5",publicKey)
-    return base64.b64encode(sm2c.encrypt(data.encode("utf-8"))).decode()
+    """
+    不要在ids登录验证以外的场景使用本函数！！！
+    """
+    sm2c = sm2.CryptSM2("",publicKey)
+    data_enc = base64.b64encode(data.encode("utf-8"))
+    return base64.b64encode(sm2c.encrypt(data_enc)).decode("utf-8")
+
