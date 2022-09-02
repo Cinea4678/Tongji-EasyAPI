@@ -10,7 +10,7 @@
 import time,math
 from random import random
 import base64
-from gmssl import sm2
+import fastgm
 
 def _genUUID():
     """
@@ -61,7 +61,9 @@ def sm2Encrypt(data:str,publicKey:str):
     """
     不要在ids登录验证以外的场景使用本函数！！！
     """
-    sm2c = sm2.CryptSM2("",publicKey)
+    sm2c = fastgm.SM2("C1C2C3")
     data_enc = base64.b64encode(data.encode("utf-8"))
-    return base64.b64encode(sm2c.encrypt(data_enc)).decode("utf-8")
+    return "04"+sm2c.encrypt(publicKey[2:],data_enc).hex()
 
+if __name__ == '__main__':
+    print(sm2Encrypt("CINEA!","3957923131D9E2F93797869D0F03EEA3268B6F490858057AA696A0BE0A4E94E71AD54761A7205A42D3C63F78DC3EAFE6F48088BAEE5D5654C70EE12F80B62F3F"))

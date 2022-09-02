@@ -147,6 +147,7 @@ def captchaOfflineBreaker(imagebs64:str,clickwords:list[str]) -> dict:
     @return: 返回一个字典。字段"result":结果，"reason"退出原因，为1时需中断验证过程并切断登陆。
     """
     #重置全局变量
+    print("call")
     global stopFlag,imageb64,wordList,result
     stopFlag = False
     imageb64 = imagebs64
@@ -168,8 +169,8 @@ def captchaOfflineBreaker(imagebs64:str,clickwords:list[str]) -> dict:
     except:
         result=[{"x":0,"y":0},{"x":0,"y":0},{"x":0,"y":0}]
     
-    stop_thread(browserThread)
-    stop_thread(checking)
+    # stop_thread(browserThread)
+    # stop_thread(checking)
 
     return {"result":result,"reason":stopReason}
     

@@ -6,9 +6,9 @@
 """
 
 try:
-    from . import verifyTools,networkTools,crack,models
+    from . import verifyTools,networkTools,crack,models,function
 except:
-    import verifyTools,networkTools,crack,models
+    import verifyTools,networkTools,crack,models,function
 import re,asyncio,time,os,json
 import requests
 import urllib.parse as urlparse
@@ -98,7 +98,7 @@ class Session():
         登录至一系统。
         **学号密码登录**：传入学号与密码即可。studentID: 学号; studentPassword: 密码。
         @params manual:  参数manual用来确认使用自动通过验证码或手动通过验证码。如果您不能成功使用自动模式，请使用手动模式。手动模式仍然存在bug。
-        **学号cookie登录**：传入cookie与studentID即可。**请注意：学号是不可省略的。**
+        **cookie登录**：传入cookie即可。
         @return: 函数会返回cookie，但是会话对象会自动登录，你无需额外操作。
         """
 
@@ -117,10 +117,15 @@ class Session():
                 studentID = str(studentID)
             if not re.match("^[1|2|3|4][0-9]{6}$",studentID):
                 raise ValueError("学号格式错误，必须匹配^[1|2|3|4][0-9]{6}$。")
+            if isinstance(cookie,str):
+                cookie = dict([l.split("=", 1) for l in cookie.split("; ")])
             self._session.cookies = cookie
             self._session.headers = networkTools.headers()
-            self.studentID=studentID
-            if self.testConnection():
+            self._studentData = function.sessionIdToUserData(cookies=cookie)
+            if self._studentData:
+                self._sessionID = cookie["sessionid"]
+                self._iflogin=True
+                self._studentID = self._studentData.studentId
                 return cookie
             else:
                 raise ValueError("您提供的cookie不能正确使用！")
@@ -139,26 +144,18 @@ class Session():
         self._session.headers = networkTools.idsheaders()
 
         #加密密码
-        #【开发者注释】此处未能逆向或找到替代模块代替SM2Encrypt，长期有偿(50-100r)招募专家逆向SM2
         IDSSM2PublicKey = verifyTools.updateSM2PublicKey(self._session)
-        old_execjsrt = ""
-        if "EXECJS_RUNTIME" in os.environ:
-            old_execjsrt = os.environ["EXECJS_RUNTIME"]
-        os.environ["EXECJS_RUNTIME"] = "PhantomJS"
-        javaScript = execjs.compile(sm2jsFile)
-        encryptData = javaScript.call('sm2Encrypt',studentPassword,IDSSM2PublicKey,0)
-        os.environ["EXECJS_RUNTIME"] = old_execjsrt
-        # encryptData = "04"+networkTools.sm2Encrypt(studentPassword,IDSSM2PublicKey)
+        encryptData = networkTools.sm2Encrypt(studentPassword,IDSSM2PublicKey)
 
         #完成验证码验证
         if manual:
             #手动完成验证
             captchaRes = verifyTools.captchaBreaker(self._session,False)
             if not captchaRes[0]:
-                return {"message":"Operation aborted."}
+                raise KeyboardInterrupt("用户手动结束了操作！")
             captchaVerification = captchaRes[1]
 
-        for _ in range(1 if manual else 10):
+        for _ in range(1 if manual else 1):
 
             if not manual:
                 #自动验证
@@ -229,9 +226,14 @@ class Session():
         
         if not manual:
             raise SystemError("自动验证失效，这真是不可思议。请使用手动模式通过验证码。")
+        
+    def request(self,method,url,data,json,params) -> requests.Response:
+        if not self._iflogin:
+            raise SystemError("请先登录再使用此功能")
+        pass
 
     def __str__(self) -> str:
-        return f"<TJU 1-Session, User:{str(self._studentData)}, Last Login Time:{time.asctime( time.localtime(self._loginTime))}, sessionID:{self._sessionID}>"
+        return self._studentData.name
 
     def __repr__(self) -> str:
         return f"<TJU 1-Session, User:{str(self._studentData)}, Last Login Time:{time.asctime( time.localtime(self._loginTime))}, sessionID:{self._sessionID}>"
@@ -242,10 +244,21 @@ class Session():
     @property
     def sessionID(self) -> str:
         return self._sessionID
-
     @property
     def studentID(self) -> str:
         return self._studentID
+    @property
+    def studentData(self) -> str:
+        return self._studentData
+    @property
+    def studentDataSourceObj(self) -> str:
+        return self._studentDataSourceObj
+    @property
+    def studentDataSourceObj(self) -> str:
+        return self._studentDataSourceObj
+    @property
+    def session(self) -> str:
+        return self._session
 
 if __name__ == "__main__":
     print(Session("2152955","831033"))

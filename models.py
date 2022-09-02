@@ -11,7 +11,7 @@
 
 class Student:
     """
-    学生信息类型
+    学生信息类型，推荐用户使用
     """
     def __init__(self,name="",studentId="",sex=0,faculty="",facultyName="",grade="",studentDataObject=None) -> None:
         if studentDataObject:
@@ -33,6 +33,9 @@ class Student:
     
     def __str__(self) -> str:
         return f"<{self._name},{self._studentId},{self._facultyName},{self._grade}级>"
+
+    def __repr__(self) -> str:
+        return str(self)
 
     #无趣的属性函数
     @property
