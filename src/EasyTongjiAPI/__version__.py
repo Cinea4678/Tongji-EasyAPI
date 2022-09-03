@@ -8,7 +8,7 @@
   www.cinea.com.cn
 """
 
-__title__ = 'easyTongji'
+__title__ = 'easyTongjiapi'
 __description__ = 'Easy Tongji 1-System API for everyone.'
 __url__ = 'https://www.cinea.com.cn'
 __version__ = '0.1.0'
