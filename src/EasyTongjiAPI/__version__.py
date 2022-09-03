@@ -11,7 +11,7 @@
 __title__ = 'easyTongjiapi'
 __description__ = 'Easy Tongji 1-System API for everyone.'
 __url__ = 'https://www.cinea.com.cn'
-__version__ = '0.1.0'
+__version__ = '0.0.1'
 __build__ = 0x001000
 __author__ = 'Cinea Zhan'
 __author_email__ = 'cinea@cinea.com.cn'
