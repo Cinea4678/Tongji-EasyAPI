@@ -9,21 +9,18 @@ try:
     from . import verifyTools,networkTools,crack,models,function
 except:
     import verifyTools,networkTools,crack,models,function
-import re,asyncio,time,os,json
+import re,threading,time,random,json
 import requests
 import urllib.parse as urlparse
-import execjs
 
 #ids.tongji.edu.cn的SM2算法公钥
 IDSSM2PublicKey = ""
-
-#SM2.js文件内容
-sm2jsFile = ""
 
 class Session():
     """
     同济大学教务系统的连接会话。
     """
+
     def __init__(self,studentID=None,studentPassword=None,manual=False,proxy=None):
         """
         初始化连接会话，*您可以选择立即登录至一系统，也可以在创建会话后登录。*
@@ -33,37 +30,38 @@ class Session():
         @param proxy: 若需使用HTTP代理，请在此填入代理地址。
         @return: 构造函数无返回值
         """
-        self._iflogin = False
-        self._studentID = None
-        self._studentPassword = None
-        self._token = None
-        self._uid = None
-        self._sessionID = None
-        self._session = requests.session()
-        self._studentData = models.Student(name="对象创建成功")
+        self.id = random.randint(1,9999)
+        self.iflogin = False
+        self.studentID = None
+        self.studentPassword = None
+        self.token = None
+        self.uid = None
+        self.sessionID = None
+        self.session = requests.session()
+        self.studentData = models.Student(name="对象创建成功")
 
-        self._loginTime = 0
+        self.loginTime = 0
+
+        self.keepaliveDestory = threading.Event()  #需要keep-alive进程销毁
+        self.keepaliveDestory.clear()
+        self.keepAlive = self.keepAliveThread(str(self.id),30,self.session,self.keepaliveDestory)
         
-
         if proxy:
             if not re.match(r"^(https?|socks5?)://([^:]*(:[^@]*)?@)?([^:]+|\[[:0-9a-fA-F]+\])(:\d+)?/?$|^$",proxy):
                 raise ValueError("代理地址格式错误，必须匹配^(https?|socks5?)://([^:]*(:[^@]*)?@)?([^:]+|\[[:0-9a-fA-F]+\])(:\d+)?/?$|^$")
             proxy = re.findall("(https?|socks5?)://(.*)")
             try:
-                self._session.proxies = {proxy[0]:proxy[1]}
+                self.session.proxies = {proxy[0]:proxy[1]}
             except:
                 raise ValueError("代理地址不能被程序解析")
-
-        #初始化：获取SM2.js
-        def initMetaFiles():
-            global sm2jsFile
-            if sm2jsFile=="":
-                sm2jsFile=verifyTools.getSM2js()
-        initMetaFiles()
 
         #登录
         if studentID or studentPassword:
             self.login(studentID,studentPassword,manual=manual)
+    
+    def __del__(self):
+        if self.iflogin:
+            self.logout()
 
     def testConnection(self,url=None):
         """
@@ -71,16 +69,16 @@ class Session():
         @params url: 你可以自定义测试连接时所前往连接的Url（请求方式为get，敬请注意）
         @return: 连接成功与否
         """
-        if not self._iflogin:
+        if not self.iflogin:
             return False  #此处为假会导致绝大多数功能异常，不能允许用户测试
-        if not self._studentID:
+        if not self.studentID:
             return False
         if not url:
-            url = f"https://1.tongji.edu.cn/api/studentservice/studentDetailInfo/getStatusInfoByStudentId?studentId={self._studentID}&_t={networkTools.ts()}"
+            url = f"https://1.tongji.edu.cn/api/studentservice/studentDetailInfo/getStatusInfoByStudentId?studentId={self.studentID}&_t={networkTools.ts()}"
 
         #开始测试连接
         try:
-            response = self._session.get(url)
+            response = self.session.get(url)
             if response.status_code!=200:
                 return False
             res = json.loads(response.text)
@@ -118,14 +116,17 @@ class Session():
             if not re.match("^[1|2|3|4][0-9]{6}$",studentID):
                 raise ValueError("学号格式错误，必须匹配^[1|2|3|4][0-9]{6}$。")
             if isinstance(cookie,str):
-                cookie = dict([l.split("=", 1) for l in cookie.split("; ")])
-            self._session.cookies = cookie
-            self._session.headers = networkTools.headers()
-            self._studentData = function.sessionIdToUserData(cookies=cookie)
-            if self._studentData:
-                self._sessionID = cookie["sessionid"]
-                self._iflogin=True
-                self._studentID = self._studentData.studentId
+                cookie = networkTools.parseStrCookie(cookie)
+            self.session.cookies = cookie
+            self.session.headers = networkTools.headers()
+            self.studentData = function.sessionIdToUserData(cookies=cookie)
+            if self.studentData:
+                self.sessionID = cookie["sessionid"]
+                self.iflogin=True
+                self.studentID = self.studentData.studentId
+                self.keepAlive.setName(str(self.studentID))
+                self.keepaliveDestory.clear()
+                self.keepAlive.start()
                 return cookie
             else:
                 raise ValueError("您提供的cookie不能正确使用！")
@@ -141,16 +142,16 @@ class Session():
             raise ValueError("密码格式错误，必须匹配^[0-9]{6}$。")
 
         #初始化Session
-        self._session.headers = networkTools.idsheaders()
+        self.session.headers = networkTools.idsheaders()
 
         #加密密码
-        IDSSM2PublicKey = verifyTools.updateSM2PublicKey(self._session)
+        IDSSM2PublicKey = verifyTools.updateSM2PublicKey(self.session)
         encryptData = networkTools.sm2Encrypt(studentPassword,IDSSM2PublicKey)
 
         #完成验证码验证
         if manual:
             #手动完成验证
-            captchaRes = verifyTools.captchaBreaker(self._session,False)
+            captchaRes = verifyTools.captchaBreaker(self.session,False)
             if not captchaRes[0]:
                 raise KeyboardInterrupt("用户手动结束了操作！")
             captchaVerification = captchaRes[1]
@@ -170,8 +171,8 @@ class Session():
                 "Ecom_Password":encryptData
             }
             dataToSend = urlparse.urlencode(dataToSend)
-            self._session.headers["content-type"]="application/x-www-form-urlencoded"
-            loginResp1 = self._session.post("https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0",data=dataToSend)
+            self.session.headers["content-type"]="application/x-www-form-urlencoded"
+            loginResp1 = self.session.post("https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0",data=dataToSend)
             urls = re.findall(r"window\.location\.href=\'(.*?)\'",loginResp1.text)
             if len(urls)>0:
                 href = urls[0]
@@ -179,19 +180,19 @@ class Session():
                 raise ValueError("登录失败，请检查学号，密码是否正确！")
 
             #第二三四跳：由ids前往1系统
-            loginResp2 = self._session.get(href,headers=networkTools.idsheaders())
+            loginResp2 = self.session.get(href,headers=networkTools.idsheaders())
 
             #第五跳：向1系统取得cookies
             try:
-                self._session.headers = networkTools.headers()
-                self._session.headers["x-token"] = ""
+                self.session.headers = networkTools.headers()
+                self.session.headers["x-token"] = ""
                 tokenForm= urlparse.parse_qs(urlparse.urlparse(loginResp2.url).query)
-                self._token = tokenForm["token"][0]
-                self._uid = tokenForm["uid"][0]
+                self.token = tokenForm["token"][0]
+                self.uid = tokenForm["uid"][0]
                 FuckTheFakeTS = tokenForm["ts"][0]
-                loginResp3 = self._session.post(f"https://1.tongji.edu.cn/api/sessionservice/session/login",data=json.dumps({
-                    "uid":self._uid,
-                    "token":self._token,
+                loginResp3 = self.session.post(f"https://1.tongji.edu.cn/api/sessionservice/session/login",data=json.dumps({
+                    "uid":self.uid,
+                    "token":self.token,
                     "ts":FuckTheFakeTS
                 }).replace(' ',''))
             except Exception as e:
@@ -205,64 +206,96 @@ class Session():
                 if "code" not in loginResult or loginResult["code"]!=200:
                     raise SystemError(f"登录失败，1系统返回了不正常的凭据。这通常是由于访问人数过多造成的。频繁出现此错误，则请联系开发者。（notes: json loads succeed but not code 200. The text is '{loginResp3.text}'）")
                 loginResult = loginResult["data"]
-                self._sessionID = loginResult["sessionid"]
-                self._aesIv = loginResult["aesIv"]
-                self._aesKey = loginResult["aesKey"]
-                self._studentDataSourceObj = loginResult["user"]
-                self._studentData = models.Student(studentDataObject=self._studentDataSourceObj)
+                self.sessionID = loginResult["sessionid"]
+                self.aesIv = loginResult["aesIv"]
+                self.aesKey = loginResult["aesKey"]
+                self.studentDataSourceObj = loginResult["user"]
+                self.studentData = models.Student(studentDataObject=self.studentDataSourceObj)
             except:
                 raise SystemError(f"登录失败，1系统返回了不正常的凭据。这通常是由于访问人数过多造成的。频繁出现此错误，则请联系开发者。（notes: json loads failed while text is '{loginResp3.text}'）")
 
             #测试连接
-            self._iflogin = True
-            self._studentID = studentID
-            self._studentPassword = studentPassword
+            self.iflogin = True
+            self.studentID = studentID
+            self.studentPassword = studentPassword
             if self.testConnection():
-                self._loginTime = time.time()
-                return self._session.cookies.get_dict()
+                self.loginTime = time.time()
+                self.keepAlive.setName(str(self.studentID))
+                self.keepaliveDestory.clear()
+                self.keepAlive.start()
+                return self.session.cookies.get_dict()
             else:
-                self._iflogin = False
+                self.iflogin = False
                 raise SystemError("登录失败，1系统未正常运行")
         
         if not manual:
             raise SystemError("自动验证失效，这真是不可思议。请使用手动模式通过验证码。")
+
+    class keepAliveThread(threading.Thread):
+        """
+        同济大学教务系统Session的Keep-alive线程，请不要自行使用。
+        """
+        def __init__(self,fatherName:str,waitTime:int,session:requests.Session,needDestory:threading.Event):
+            self.waitTime = waitTime
+            self.session = session
+            self.needDestory = needDestory
+            self.id = random.randint(1,9999)
+            super().__init__(name=f"1-Session-{fatherName} KeepAliveThread {self.id}")
         
-    def request(self,method,url,data,json,params) -> requests.Response:
-        if not self._iflogin:
+        def setName(self, name: str) -> None:
+            return super().setName(f"1-Session-{name} KeepAliveThread {self.id}")
+
+        def run(self):
+            lastRun = 0
+            while not self.needDestory.is_set():
+                if time.time()-lastRun>self.waitTime:
+                    self.session.get(f"https://1.tongji.edu.cn/api/baseresservice/schoolCalendar/currentTermCalendar?_t={networkTools.ts()}")
+                    lastRun = time.time()
+                time.sleep(2)
+                        
+    def request(self,method,url,data=None,json=None,params=None) -> requests.Response:
+        if not self.iflogin:
             raise SystemError("请先登录再使用此功能")
-        pass
+        return self.session.request(method=method,url=url,params=params,data=data,json=json)        
+
+    def logout(self) -> bool:
+        if not self.iflogin:
+            raise SystemError("请先登录再使用此功能")
+        self.iflogin = not function.sessionLogout(sessionId=self.sessionID,session=self.session,uid=self.studentID)
+        if not self.iflogin:
+            self.keepaliveDestory.set()
+        return not self.iflogin
+
+    #以下是APIs
+    def getSchoolCalender(self)->dict:
+        """
+        获取当前学期的校历。返回数据格式参考文档
+        @return: 字典格式的查询结果。若失败，则返回None。
+        """
+        if not self.iflogin:
+            raise SystemError("请先登录再使用此功能")
+        return function.getSchoolCalender(session=self.session)
+
+    def getHolidayByYear(self,year=time.localtime(time.time()).tm_year)->dict:
+        """
+        获取指定年份的假期安排。返回数据格式参考文档
+        @params: 年份。不填则为本年
+        @return: 字典格式的查询结果。若失败，则返回None。
+        """
+        if not self.iflogin:
+            raise SystemError("请先登录再使用此功能")
+        return function.getHolidayByYear(year=year,session=self.session)
+
 
     def __str__(self) -> str:
-        return self._studentData.name
+        return self.studentData.name
 
     def __repr__(self) -> str:
-        return f"<TJU 1-Session, User:{str(self._studentData)}, Last Login Time:{time.asctime( time.localtime(self._loginTime))}, sessionID:{self._sessionID}>"
+        return f"<TJU 1-Session, User:{str(self.studentData)}, Last Login Time:{time.asctime( time.localtime(self.loginTime))}, sessionID:{self.sessionID}>"
 
-    """
-    以下是参数函数的实现
-    """
-    @property
-    def sessionID(self) -> str:
-        return self._sessionID
-    @property
-    def studentID(self) -> str:
-        return self._studentID
-    @property
-    def studentData(self) -> str:
-        return self._studentData
-    @property
-    def studentDataSourceObj(self) -> str:
-        return self._studentDataSourceObj
-    @property
-    def studentDataSourceObj(self) -> str:
-        return self._studentDataSourceObj
-    @property
-    def session(self) -> str:
-        return self._session
 
 if __name__ == "__main__":
     print(Session("2152955","831033"))
-
 
 
 
