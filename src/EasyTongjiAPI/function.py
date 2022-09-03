@@ -78,7 +78,7 @@ def sessionLogout(sessionId = None,cookie = None, **kw)->bool:
         cookie=sessionId[1]
         sessionId = sessionId[0]
 
-        uid = sessionIdToUserData(cookies=cookie).studentId
+        uid = sessionIdToUserData(cookie=cookie).studentId
         res = requests.post("https://1.tongji.edu.cn/api/sessionservice/session/logout",json={
             "sessionid":sessionId,
             "uid":uid
@@ -141,8 +141,31 @@ def getHolidayByYear(sessionId=None,cookie=None,year=time.localtime(time.time())
         return res["data"]
     except:
         return None
+    
+def getScore(sessionId=None,cookie=None,**kw)->models.Scores:
+    """
+    获取本人成绩。返回Scores对象，原始字典在其data属性内。
+    @params: 在sessionId与cookie中任选一项传入即可。
+    @return: Scores对象。若失败，则返回None。
+    """
+    if "session" not in kw:
+        cookie = _processArgs(sessionId,cookie)[1]
+        uid = sessionIdToUserData(cookie=cookie).studentId
+        res = requests.get(f"https://1.tongji.edu.cn/api/scoremanagementservice/scoreGrades/getMyGrades?studentId={uid}&_t={networkTools.ts()}",headers=networkTools.headers(),cookies=cookie)
+    else:
+        session:requests.Session = kw["session"]
+        uid = kw["uid"]
+        res = session.get(f"https://1.tongji.edu.cn/api/scoremanagementservice/scoreGrades/getMyGrades?studentId={uid}&_t={networkTools.ts()}")
+    
+    try:
+        res = res.json()
+        assert res["code"]==200
+        res = res["data"]
+        return models.Scores(res)
+    except:
+        return None
 
 
 
 if __name__=="__main__":
-    me = sessionIdToUserData(sessionId="61ab6104395c478b9dcadc66b94f4108")
+    print(repr(getScore(sessionId="821e209ee07848ef8995c7912679cfb4")))

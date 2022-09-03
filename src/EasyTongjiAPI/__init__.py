@@ -13,3 +13,5 @@ from .__version__ import __title__,__description__,__url__
 from .__version__ import __build__,__version__
 
 from .session import Session
+from .models import Student,Scores
+from .function import *

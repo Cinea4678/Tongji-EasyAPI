@@ -124,6 +124,7 @@ class Session():
                 self.sessionID = cookie["sessionid"]
                 self.iflogin=True
                 self.studentID = self.studentData.studentId
+                self.loginTime = time.time()
                 self.keepAlive.setName(str(self.studentID))
                 self.keepaliveDestory.clear()
                 self.keepAlive.start()
@@ -285,6 +286,15 @@ class Session():
         if not self.iflogin:
             raise SystemError("请先登录再使用此功能")
         return function.getHolidayByYear(year=year,session=self.session)
+
+    def getScore(self) -> models.Scores:
+        """
+        获取本人成绩。返回Scores对象，原始字典在其data属性内。
+        @return: Scores对象。若失败，则返回None。
+        """
+        if not self.iflogin:
+            raise SystemError("请先登录再使用此功能")
+        return function.getScore(uid=self.studentID,session=self.session)
 
 
     def __str__(self) -> str:

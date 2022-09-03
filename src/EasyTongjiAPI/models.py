@@ -57,20 +57,22 @@ class Scores:
         """
         sd = sourceData  #节省代码量
         self.data = sourceData
-        
+
         try:
             self.gradePoint = sd["totalGradePoint"]  #学生总寄点
             self.earnedCredits = sd["actualCredit"]  #已修读学分
             self.failedCredits = sd["failingCredits"]  #不及格学分
             self.failedNum = sd["failingCourseCount"]  #不及格门数
             self.termNum = len(sd["term"])   #学期数量
+            self.coursesList = []     #课程列表
 
             courseNum = 0
             gradesNum = [0,0,0,0,0,0]
             for term in sd["term"]:
                 courseNum+=len(term["creditInfo"])
                 for courses in term["creditInfo"]:
-                    gradesNum[courses["gradePoint"]]+=1
+                    gradesNum[int(courses["gradePoint"])]+=1
+                    self.coursesList.append(courses)
 
             self.courseNum = courseNum   #已修读课程数量
             self.gradeExcellence = gradesNum[5]   #获优课程门数
@@ -81,5 +83,11 @@ class Scores:
 
             #更多功能，发issue，都可以加！
 
-        except KeyError:
+        except KeyError as e:
             raise ValueError("传入的内容不能被正确解析，请检查是否完整、正确传入")
+    
+    def __str__(self):
+        return str(self.gradePoint)
+    
+    def __repr__(self) -> str:
+        return f"<gpa:{self.gradePoint}, terms:{self.termNum}, courses:{self.courseNum}, excellence:{self.gradeExcellence}>"
