@@ -26,28 +26,25 @@
 
 
 
-### 安装
+## 安装
 
-项目会在未来发布到PyPI平台。
+### 环境要求
 
-如果你需要现在使用，请clone项目到本地并直接import。
+对所有用户，都需要3.0以上的Python环境。
 
+- 对于Windows用户，只需拥有**Python 3.6及以上**的环境即可。在Powershell / cmd / 终端输入`python --version`查看你的版本。若你的Python版本小于3.6，则你需要拥有生成工具。
 
+    - 你可以安装Visual Studio生成工具：[官方链接](https://visualstudio.microsoft.com/zh-hans/downloads/#build-tools-for-visual-studio-2022)
 
-### 条款和条件
+    - 若你有Conda工具，也可以使用 `conda install libpython m2w64-toolchain -c msys2` 来安装生成工具。
 
-为了保护作者、规范使用，作者对本包的使用和二次开发作出了以下限制：
+- 对于Linux、Unix和Mac用户，需要拥有生成工具（gcc）。大多数发行版都会随附生成工具，在控制台输入 `gcc --version` 查看自己是否已经安装gcc。
 
-- 本项目使用GNU GENERAL PUBLIC LICENSE v3.0协议开源
+### 安装过程
 
-- 豁免用户二次开发必须使用相同协议开源的条款。但是，如果你决定不使用相同协议二次开源，那么你将不得再继续使用项目中来自其他项目的使用该协议开源的代码。
-- 用户二次开发的代码禁止用于商业盈利、网络攻击、网络犯罪等目的
+```python
+pip install easyTongjiapi
+```
 
-
-
-## 有偿招募
-
-### 验证码耗时
-
-统一身份验证系统要求必须提交验证码答案。作者由于能力有限，目前仅能使用打码平台完成此目标；但是这样的后果就是单次登陆的时间被延长至十秒以上，且需要支付一定的费用。如果你可以以任何方法帮助把这一耗时显著减小（且不过度耗费客户端性能），作者愿意为你的贡献支付一定的酬金（100~200r），且相关代码可以以你的身份PR。
+对Linux、Unix和Mac用户，可能需要使用 `pip3` 而不是 `pip`。 
 

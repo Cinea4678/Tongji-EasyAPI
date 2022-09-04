@@ -1,5 +1,13 @@
 """
-  易用的一系统API。
+  易用的一系统API。requests？F12找cookie？抱歉，忘了他们吧！
+  ------------------------------------------------
+  使用范例/快速上手：
+
+  >>>  s = easyTongjiapi.Session()
+  >>>  s.login(2152xxx,831xxx)
+  >>>  print(s.sessionID)
+  >>>  s.getScore()
+  >>>  s.getScore().gradePoint
   -------------------------------------------------
   Project Tongji-EasyAPI
   __init__.py
