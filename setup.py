@@ -26,7 +26,6 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    package_data={"easyTongjiapi":["src/easyTongjiapi/*.pyi"]},
     python_requires=">=3",
     install_requires=["requests","beautifulsoup4","lxml","fastgm-whl",
     "opencv-python","pycryptodome","pillow","numpy"],
