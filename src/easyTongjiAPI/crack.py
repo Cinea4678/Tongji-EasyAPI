@@ -19,6 +19,8 @@ import base64
 import json
 from PIL import Image, ImageDraw, ImageFont
 
+currentDir = os.path.dirname(os.path.abspath(__file__))
+
 
 def getData():
     url = "https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0/getCaptcha=1"
@@ -29,7 +31,7 @@ def getData():
 def check(data, point):
     url = "https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0/checkCaptcha=1"
     enc = encrypt(json.dumps(point).replace(" ", ""), data["secretKey"])
-    resp = requests.post(url,json={ "token": data["token"], "pointJson": enc })
+    resp = requests.post(url, json={"token": data["token"], "pointJson": enc})
     return resp.json()
 
 
@@ -59,7 +61,7 @@ def getImageFromBase64(b64):
 def findContour(img):
     if cv2.__version__.startswith('3'):
         _, contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    else: 
+    else:
         contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     def find_if_close(cnt1, cnt2):
@@ -77,7 +79,7 @@ def findContour(img):
     for i, cnt1 in enumerate(contours):
         x = i
         if i != LENGTH - 1:
-            for j, cnt2 in enumerate(contours[i + 1 :]):
+            for j, cnt2 in enumerate(contours[i + 1:]):
                 x = x + 1
                 dist = find_if_close(cnt1, cnt2)
                 if dist == True:
@@ -156,10 +158,11 @@ def extractChar(img, contour):
 
 def genCharacter(ch, size):
     img = Image.new("L", size, 0)
-    font = ImageFont.truetype("simsun.ttc", min(size))
+    font = ImageFont.truetype(currentDir + "/simsun.ttc", min(size))
     draw = ImageDraw.Draw(img)
     draw.text((0, 0), ch, font=font, fill=255)
     return np.asarray(img)
+
 
 def crack(data):
     img = getImageFromBase64(data["originalImageBase64"])
@@ -189,7 +192,7 @@ def crack(data):
     return [{"x": int(ans[w][0]), "y": int(ans[w][1])} for w in data["wordList"]]
 
 
-def getCode():
+def getCode() -> str:
     for i in range(20):
         data = getData()
         point = crack(data)
@@ -198,5 +201,6 @@ def getCode():
             return encrypt(raw, data["secretKey"])
     return ""
 
+
 if __name__ == "__main__":
-    print(getCode(),end="")
+    print(getCode(), end="")

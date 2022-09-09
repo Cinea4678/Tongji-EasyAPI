@@ -26,7 +26,7 @@ class Session:
 
     def __init__(self, studentID=None, studentPassword=None, manual=False, proxy=None):
         """
-        初始化连接会话，*您可以选择立即登录至一系统，也可以在创建会话后登录。*
+        初始化连接会话，I{您可以选择立即登录至一系统，也可以在创建会话后登录。}
         @param studentID: 若现在登录，则为登录学生的**学号**。
         @param studentPassword: 若现在登录，则为登录学生的**密码**（推荐密码使用str）。
         @param manual: 是否手动输入验证码。若自动输入不成功，请尝试使用手动输入。
@@ -35,13 +35,13 @@ class Session:
         """
         self.id = random.randint(1, 9999)
         self.islogin = False
-        self.studentID = None
+        self.studentID = ""
         self.studentPassword = None
         self.token = None
         self.uid = None
         self.sessionID = None
         self.session = requests.session()
-        self.studentData = models.Student(name="对象创建成功")
+        self.studentData = models.Student("未登录", "", 0, 0, "", "")
 
         self.loginTime = 0
 
@@ -70,7 +70,7 @@ class Session:
     def testConnection(self, url=None):
         """
         测试连接会话是否已经成功建立。
-        @params url: 你可以自定义测试连接时所前往连接的Url（请求方式为get，敬请注意）
+        @param url: 你可以自定义测试连接时所前往连接的Url（请求方式为get，敬请注意）
         @return: 连接成功与否
         """
         if not self.islogin:
@@ -98,9 +98,11 @@ class Session:
     def login(self, studentID=None, studentPassword=None, cookie=None, manual=False):
         """
         登录至一系统。
-        **学号密码登录**：传入学号与密码即可。studentID: 学号; studentPassword: 密码。
-        @params manual:  参数manual用来确认使用自动通过验证码或手动通过验证码。如果您不能成功使用自动模式，请使用手动模式。手动模式仍然存在bug。
-        **cookie登录**：传入cookie即可。
+
+        B{学号密码登录}：传入学号与密码即可。studentID: 学号; studentPassword: 密码。
+
+        B{cookie登录}：传入cookie即可。
+        @param manual: 参数manual用来确认使用自动通过验证码或手动通过验证码。如果您不能成功使用自动模式，请使用手动模式。手动模式可能会发生bug
         @return: 函数会返回cookie，但是会话对象会自动登录，你无需额外操作。
         """
 
@@ -144,8 +146,6 @@ class Session:
             studentPassword = "%06d" % studentPassword  # 补齐零
         if not re.match("^[1|2|3|4][0-9]{6}$", studentID):
             raise ValueError("学号格式错误，必须匹配^[1|2|3|4][0-9]{6}$。")
-        if not re.match("^[0-9]{6}$", studentPassword):
-            raise ValueError("密码格式错误，必须匹配^[0-9]{6}$。")
 
         # 初始化Session
         self.session.headers = networkTools.idsHeaders()
@@ -182,7 +182,7 @@ class Session:
             self.session.headers["content-type"] = "application/x-www-form-urlencoded"
             loginResp1 = self.session.post("https://ids.tongji.edu.cn:8443/nidp/app/login?sid=0&sid=0", data=dataToSend)
             urls = re.findall(r"window\.location\.href=\'(.*?)\'", loginResp1.text)
-            if len(urls) > 0:
+            if len(urls) > 0 and "tongjiaccount" not in urls[0]:
                 href = urls[0]
             else:
                 raise ValueError("登录失败，请检查学号，密码是否正确！")
@@ -217,8 +217,9 @@ class Session:
                         f"登录失败，1系统返回了不正常的凭据。这通常是由于访问人数过多造成的。频繁出现此错误，则请联系开发者。（notes: json loads succeed but not code 200. The text is '{loginResp3.text}'）")
                 loginResult = loginResult["data"]
                 self.sessionID = loginResult["sessionid"]
-                studentDataSourceObj = loginResult["user"]
-                self.studentData = models.Student(studentDataObject=studentDataSourceObj)
+                sobj = loginResult["user"]
+                self.studentData = models.Student(sobj["name"], sobj["uid"], sobj["sex"], sobj["faculty"],
+                                                  sobj["facultyName"], sobj["grade"])
             except:
                 raise SystemError(
                     f"登录失败，1系统返回了不正常的凭据。这通常是由于访问人数过多造成的。频繁出现此错误，则请联系开发者。（notes: json loads failed while text is '{loginResp3.text}'）")
@@ -290,7 +291,7 @@ class Session:
     def getHolidayByYear(self, year=time.localtime(time.time()).tm_year) -> dict:
         """
         获取指定年份的假期安排。返回数据格式参考文档
-        @params: 年份。不填则为本年
+        @param year: 年份。不填则为本年
         @return: 字典格式的查询结果。若失败，则返回None。
         """
         if not self.islogin:
@@ -314,4 +315,4 @@ class Session:
 
 
 if __name__ == "__main__":
-    print(Session("2152955", "831033"))
+    print(Session("2152955", "ZSYzsy20030810", manual=True))

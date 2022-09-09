@@ -9,7 +9,7 @@ if os.name == "posix" and os.system("gcc --version") != 0:
 
 setup(
     name="easyTongjiapi",
-    version="0.1.0a3",
+    version="0.1.1",
     description="Easy Tongji 1-System API for everyone.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -26,6 +26,7 @@ setup(
     ],
     package_dir={"": "src"},
     packages=find_packages(where="src"),
+    include_package_data=True,
     python_requires=">=3",
     install_requires=["requests", "beautifulsoup4", "lxml", "fastgm-whl",
                       "opencv-python", "pycryptodome", "pillow", "numpy"],

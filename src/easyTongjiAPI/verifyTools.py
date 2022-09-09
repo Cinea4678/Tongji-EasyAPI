@@ -25,7 +25,6 @@ import Crypto.Util.Padding as Padding
 def genUUID():
     """
     本函数可以生成一个在登录验证中使用的UUID。如果你需要手动写通过验证码的过程，那么你可能会需要它。
-    @param: 无需任何参数
     @return: 生成的UUID
     """
     s = []
@@ -42,7 +41,6 @@ def genUUID():
 def updateSM2PublicKey(session: requests.Session = None):
     """
     本函数用于从ids.tongji.edu.cn获取最新的SM2公钥及其对应的cookie。如果你需要手动写通过验证码的过程，那么你可能会需要它。
-    @param: 无需任何参数
     @return: 字典。secretId为公钥，cookie为对应的cookie（request.RequestCookieJar格式）。请注意，每个公钥都对应唯一的JSESSIONID。
     """
     if session:
@@ -98,7 +96,7 @@ def aesEncrypt(data: str, key: str) -> str:
     return result
 
 
-def captchaBreaker(session: requests.Session, online: bool = False) -> tuple[bool, str]:
+def captchaBreaker(session: requests.Session, online: bool = False) -> tuple:
     """
     开发者说明：
 
@@ -127,7 +125,7 @@ def captchaBreaker(session: requests.Session, online: bool = False) -> tuple[boo
             raise SystemError("1系统拒绝了我们的请求：" + result["repMsg"])
 
     # 阶段三：验证图片验证码
-    def verifyCaptcha(pointData: list[dict[str, int]], _captchaMeta: dict, _uuid: str) -> bool:
+    def verifyCaptcha(pointData: list, _captchaMeta: dict, _uuid: str) -> bool:
         result = session.post(BaseUrl + "/checkCaptcha=1", json={
             "captchaType": "clickWord",
             "clientUid": _uuid,

@@ -1,2 +1,2 @@
-recursive-include src/easyTongjiapi *.pyi *.ttc
+recursive-include src/easyTongjiapi *.ttc
 recursive-include src/easyTongjiapi/web *
