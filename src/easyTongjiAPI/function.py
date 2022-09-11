@@ -84,9 +84,7 @@ def sessionLogout(sessionId=None, cookie=None, **kw) -> bool:
     """
 
     if "session" not in kw:
-        sessionId = _processArgs(sessionId, cookie)
-        cookie = sessionId[1]
-        sessionId = sessionId[0]
+        sessionId, cookie = _processArgs(sessionId, cookie)
 
         uid = sessionIdToUserData(cookie=cookie).studentId
         res = requests.post("https://1.tongji.edu.cn/api/sessionservice/session/logout", json={
@@ -192,6 +190,46 @@ def getScore(sessionId=None, cookie=None, **kw) -> Optional[models.Scores]:
         return models.Scores(res)
     except AssertionError or json.JSONDecodeError or KeyError:
         return None
+
+
+"""
+PART.3  选课类
+
+诚挚建议阅读文档以了解选课API使用方法。
+"""
+
+
+def getRounds(sessionId=None, cookie=None, **kw) -> Optional[tuple]:
+    """
+    获取当前可选课轮次。
+
+    此方法可能存在问题。若出现bug，请直接邮件联系开发者。
+    @param sessionId: 在sessionId与cookie中任选一项传入即可。
+    @param cookie: 在sessionId与cookie中任选一项传入即可。
+    @return: 包含选课信息具名元组的元组。
+    @rtype: 元组，内容是可以选课的轮次的具名元组。
+    """
+    if "session" not in kw:
+        cookie = _processArgs(sessionId, cookie)[1]
+        res = requests.post("https://1.tongji.edu.cn/api/electionservice/student/getRounds?projectId=1",
+                            headers=networkTools.headers(), cookies=cookie)
+    else:
+        session: requests.Session = kw["session"]
+        res = session.post("https://1.tongji.edu.cn/api/electionservice/student/getRounds?projectId=1")
+
+    try:
+        res = res.json()
+        assert res["code"] == 200
+        res = res["data"]
+        result = []
+        for _round in res:
+            result.append(models.electRound(_round["id"], _round["name"], _round["openFlag"], _round["beginTime"], _round["endTime"],
+                                            _round["createdAt"], _round["updatedAt"], _round["remark"], _round["calendarId"],
+                                            _round["calendarName"]))
+        return tuple(result)
+    except AssertionError or json.JSONDecodeError or KeyError:
+        return None
+
 
 
 if __name__ == "__main__":

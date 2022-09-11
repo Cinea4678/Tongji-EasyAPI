@@ -10,6 +10,8 @@ from collections import namedtuple
 
 Student = namedtuple('Student', ['name', 'studentId', 'sex', 'faculty', 'facultyName', 'grade'])
 
+electRound = namedtuple("electRound", ["id", "name", "isOpen", "beginTime", "endTime", "createdTime", "updateTime",
+                                       "remark", "calendarId", "calendarName"])
 
 class Scores:
 

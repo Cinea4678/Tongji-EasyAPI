@@ -18,5 +18,7 @@ def getHolidayByYear(sessionId:str|None = ...,cookie:str|dict|None = ...,year:in
 
 def getScore(sessionId:str|None = ...,cookie:str|dict|None = ..., **kw)->Optional[models.Scores]:...
 
+def getRounds(sessionId:str|None = ..., cookie:str|None = ..., **kw) -> Optional[tuple]: ...
+
 
 

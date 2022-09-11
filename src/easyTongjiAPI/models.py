@@ -19,6 +19,12 @@ Student = namedtuple('Student', ['name', 'studentId', 'sex', 'faculty', 'faculty
   学生信息具名元组。
 """
 
+electRound = namedtuple("electRound", ["id", "name", "isOpen", "beginTime", "endTime", "createdTime", "updateTime",
+                                       "remark", "calendarId", "calendarName"])
+"""
+  选课信息具名元组。
+"""
+
 
 class Scores:
     """

@@ -15,6 +15,7 @@ import re
 import threading
 import time
 import urllib.parse as urlparse
+from typing import Optional
 
 import requests
 
@@ -279,7 +280,7 @@ class Session:
         return not self.islogin
 
     # 以下是APIs
-    def getSchoolCalender(self) -> dict:
+    def getSchoolCalender(self) -> Optional[dict]:
         """
         获取当前学期的校历。返回数据格式参考文档
         @return: 字典格式的查询结果。若失败，则返回None。
@@ -288,7 +289,7 @@ class Session:
             raise SystemError("请先登录再使用此功能")
         return function.getSchoolCalender(session=self.session)
 
-    def getHolidayByYear(self, year=time.localtime(time.time()).tm_year) -> dict:
+    def getHolidayByYear(self, year=time.localtime(time.time()).tm_year) -> Optional[dict]:
         """
         获取指定年份的假期安排。返回数据格式参考文档
         @param year: 年份。不填则为本年
@@ -298,7 +299,7 @@ class Session:
             raise SystemError("请先登录再使用此功能")
         return function.getHolidayByYear(year=year, session=self.session)
 
-    def getScore(self) -> models.Scores:
+    def getScore(self) -> Optional[models.Scores]:
         """
         获取本人成绩。返回Scores对象，原始字典在其data属性内。
         @return: Scores对象。若失败，则返回None。
@@ -306,6 +307,18 @@ class Session:
         if not self.islogin:
             raise SystemError("请先登录再使用此功能")
         return function.getScore(uid=self.studentID, session=self.session)
+
+    def getRounds(self) -> Optional[tuple]:
+        """
+        获取当前可选课轮次。
+
+        此方法可能存在问题。若出现bug，请直接邮件联系开发者。
+        @return: 包含选课信息具名元组的元组。
+        @rtype: 元组，内容是可以选课的轮次的具名元组。
+        """
+        if not self.islogin:
+            raise SystemError("请先登录再使用此功能")
+        return function.getRounds(session=self.session)
 
     def __str__(self) -> str:
         return self.studentData.name
