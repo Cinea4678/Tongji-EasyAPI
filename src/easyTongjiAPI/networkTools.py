@@ -6,11 +6,12 @@
   Copyright (c) 2022 Cinea Zhan. All rights reserved
   www.cinea.com.cn
 """
-
+import array
 import time, math
 from random import random
 import base64
 import fastgm
+from Crypto.Cipher import AES
 
 
 def _genUUID():
@@ -78,7 +79,43 @@ def parseStrCookie(cookie):
     return dict([l.split("=", 1) for l in cookie.split("; ")])
 
 
+def aesEncrypt(data: str, key: str, iv: str):
+    """
+    请不要在1系统以外场景使用本函数
+    """
+
+    def paramHandler(e: str) -> str:
+        # 一系统使用的混淆函数
+        t = [c for c in e]
+        a = ["" for _ in range(len(t))]
+        r = 0
+        while r < len(t):
+            if r + 1 <= len(t):
+                a[r] = t[r + 1]
+                a[r + 1] = t[r]
+            else:
+                a[r] = t[r]
+            r += 2
+        return "".join(a)
+
+    def pkcs7padding(text):
+        length = len(text)
+        bytes_length = len(text.encode('utf-8'))
+        padding_size = length if (bytes_length == length) else bytes_length
+        padding = 16 - padding_size % 16
+        padding_text = chr(padding) * padding
+        return text + padding_text
+
+    key = paramHandler(key).encode('utf-8')
+    iv = paramHandler(iv).encode('utf-8')
+
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    data = pkcs7padding(data)
+    encrypt = cipher.encrypt(data.encode('utf-8'))
+    return base64.b64encode(encrypt).decode('utf-8')
+
+
+
 if __name__ == '__main__':
     # noinspection SpellCheckingInspection
-    print(sm2Encrypt("CINEA!",
-                     "3957923131D9E2F93797869D0F03EEA3268B6F490858057AA696A0BE0A4E94E71AD54761A7205A42D3C63F78DC3EAFE6F48088BAEE5D5654C70EE12F80B62F3F"))
+    print(aesEncrypt('2152955', 'Cf^mp7A1qwPKNTnj', 'aM5W2a%vI%e9$mIU'))
