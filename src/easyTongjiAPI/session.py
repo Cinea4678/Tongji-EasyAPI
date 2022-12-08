@@ -328,4 +328,4 @@ class Session:
 
 
 if __name__ == "__main__":
-    print(Session("2152955", "ZSYzsy20030810", manual=True))
+    print(Session("", "ZSYzsy20030810", manual=True))
