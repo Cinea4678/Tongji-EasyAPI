@@ -53,16 +53,20 @@ class Scores:
             self.earnedCredits = sd["actualCredit"]  # 已修读学分
             self.failedCredits = sd["failingCredits"]  # 不及格学分
             self.failedNum = sd["failingCourseCount"]  # 不及格门数
-            self.termNum = len(sd["term"])  # 学期数量
-            self.coursesList = []  # 课程列表
 
             courseNum = 0
             gradesNum = [0, 0, 0, 0, 0, 0]
-            for term in sd["term"]:
-                courseNum += len(term["creditInfo"])
-                for courses in term["creditInfo"]:
-                    gradesNum[int(courses["gradePoint"])] += 1
-                    self.coursesList.append(courses)
+            self.coursesList = []  # 课程列表
+
+            try:
+                self.termNum = len(sd["term"])  # 学期数量
+                for term in sd["term"]:
+                    courseNum += len(term["creditInfo"])
+                    for courses in term["creditInfo"]:
+                        gradesNum[int(courses["gradePoint"])] += 1
+                        self.coursesList.append(courses)
+            except TypeError as e:
+                self.termNum = 0                # 学期数量
 
             self.courseNum = courseNum  # 已修读课程数量
             self.gradeExcellence = gradesNum[5]  # 获优课程门数
@@ -73,7 +77,7 @@ class Scores:
 
             # 更多功能，发issue，都可以加！
 
-        except KeyError as e:
+        except KeyError or TypeError as e:
             raise ValueError("传入的内容不能被正确解析，请检查是否完整、正确传入, 错误信息：" + str(e))
 
     def __str__(self):

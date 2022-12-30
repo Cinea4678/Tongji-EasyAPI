@@ -115,7 +115,6 @@ def aesEncrypt(data: str, key: str, iv: str):
     return base64.b64encode(encrypt).decode('utf-8')
 
 
-
 if __name__ == '__main__':
     # noinspection SpellCheckingInspection
-    print(aesEncrypt('2152955', 'Cf^mp7A1qwPKNTnj', 'aM5W2a%vI%e9$mIU'))
+    print(aesEncrypt('', 'Cf^mp7A1qwPKNTnj', 'aM5W2a%vI%e9$mIU'))

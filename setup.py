@@ -9,7 +9,7 @@ if os.name == "posix" and os.system("gcc --version") != 0:
 
 setup(
     name="easyTongjiapi",
-    version="0.1.1",
+    version="0.1.4",
     description="Easy Tongji 1-System API for everyone.",
     long_description=long_description,
     long_description_content_type="text/markdown",
