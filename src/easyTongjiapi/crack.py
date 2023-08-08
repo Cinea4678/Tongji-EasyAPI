@@ -1,6 +1,5 @@
 """
   This file is planned to be deployed on one cloud server so that users don't  have to install OpenCV, Pillows and so on.
-  感谢刘孔阳大佬
   --------------------------------------------
   Project Tongji-EasyAPI
   crack.py
